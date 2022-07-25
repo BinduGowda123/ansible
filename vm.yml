@@ -1,0 +1,39 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script:
+    echo Hello, world!
+    echo stared by user $(NAME)
+  displayName: 'Run a one-line script'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'
+- task: Bash@3
+  displayName: VMCreate
+  inputs:
+    targetType: 'inline'
+    script: |
+      #!/bin/bash
+      az login --tenant 30b9e62d-f376-4116-9d17-bc4a7bb87915
+      az account show --output yaml
+      az group create --name bindurg --location eastasia
+      az network vnet create -g bindurg -n binduvnet --address-prefix 10.0.0.0/16 \
+                --subnet-name bindusubnet --subnet-prefix 10.0.0.0/24
+      az network nsg create -g bindurg -n bindunsg
+      az network nic create -g bindurg --vnet-name binduvnet --subnet bindusubnet -n bindunic
+      az network nic ip-config create -g bindurg -n binduipConfig --nic-name bindunic --make-primary
+      az vm create -n mastervm -g bindurg --image UbuntuLTS --public-ip-sku Standard --authentication-type password --admin-username bindu --admin-password Bindu@123456789
+      az vm open-port --port 8080 --resource-group bindurg --name mastervm
+      az vm create -n nodevm1 -g bindurg --image UbuntuLTS --public-ip-sku Standard --authentication-type password --admin-username bindu --admin-password Bindu@123456789
+      az vm create -n nodevm2 -g bindurg --image UbuntuLTS --public-ip-sku Standard --authentication-type password --admin-username bindu --admin-password Bindu@123456789
